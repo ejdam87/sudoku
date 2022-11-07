@@ -1,24 +1,19 @@
 from typing import List, Tuple
-from functools import cmp_to_key
-import random
-
 
 Board = List[List[int]]
 Square = Tuple[int, int]
 
 
 class Sudoku:
-
     def __init__(self, board: Board) -> None:
-
         self.board = board
         self.squares = [(i, j) for i in range(3) for j in range(3)]
 
-
-    def fill_board(self) -> None:
-
-        self.place_number(self.board, self.squares, 1)
-
+    def solve(self) -> bool:
+        """
+        Finds ONE solution of sudoku (there might be more)
+        """
+        return self.place_number(self.board, self.squares, 1)
 
     def place_number(self,
                      board: Board,
@@ -27,23 +22,18 @@ class Sudoku:
 
         if squares_left == []:
 
+            ## Filled all squares with all numbers
             if num == 9:
                 return True
 
-            if self.place_number(board, self.squares, num + 1):
-                return True
+            return self.place_number(board, self.squares, num + 1)
 
-            return
-
-        squares_left = sorted(squares_left, key=cmp_to_key(self.compare_squares))
         possible = self.get_possible(board, squares_left[0], num)
 
         if possible == []:
-            return
+            return False
 
-        for option in possible:
-
-            x, y = option
+        for x, y in possible:
 
             prev = board[x][y]
             board[x][y] = num
@@ -53,60 +43,15 @@ class Sudoku:
 
             board[x][y] = prev
 
-
-    def compare_squares(self, s1: Square, s2: Square) -> int:
-        
-        return self.count_filled(s1) - self.count_filled(s2)
-
-    def compare_options(self, o1: Tuple[int, int], o2: Tuple[int, int]) -> int:
-        
-        a = self.count_row(o1[0]) - self.count_row(o2[0])
-        b = self.count_col(o1[1]) - self.count_col(o2[1])
-
-        if abs(a) > abs(b):
-            return a
-
-        return b
-
-    def count_row(self, row: int) -> int:
-
-        total = 0
-        for num in self.board[row]:
-            if num != 0:
-                total += 1
-
-        return total
-
-    def count_col(self, col: int) -> int:
-
-        total = 0
-
-        for row in self.board:
-
-            if row[col] != 0:
-                total += 1
-
-        return total
-
-    def count_filled(self, square: Square) -> int:
-
-        total = 0
-        for i in range(3 * square[0], 3 * square[0] + 3):
-            for j in range(3 * square[1], 3 * square[1] + 3):
-                
-                if self.board[i][j] != 0:
-                    total += 1
-
-        return total
+        return False
 
     def check_squares(self, board: Board, num: int) -> bool:
 
         present = False
 
-        for square in self.squares:
-
-            for i in range(3 * square[0], 3 * square[0] + 3):
-                for j in range(3 * square[1], 3 * square[1] + 3):
+        for sx, sy in self.squares:
+            for i in range(3 * sx, 3 * sx + 3):
+                for j in range(3 * sy, 3 * sy + 3):
 
                     if num == board[i][j]:
                         present = True
@@ -121,10 +66,11 @@ class Sudoku:
     def get_possible(self, board: Board, square: Square, num: int) -> List[Tuple[int, int]]:
 
         possible = []
-        for row in range(3 * square[0], 3 * square[0] + 3):
+        sx, sy = square
+        for row in range(3 * sx, 3 * sx + 3):
+            for column in range(3 * sy, 3 * sy + 3):
 
-            for column in range(3 * square[1], 3 * square[1] + 3):
-
+                ## Already present in square
                 if board[row][column] == num:
                     return [(row, column)]
 
@@ -139,29 +85,15 @@ class Sudoku:
 
         return possible
 
-
-    def is_in_square(self, board: Board, square: Square, num: int) -> bool:
-
-        for i in range(3 * square[0], 3 * square[0] + 3):
-            for j in range(3 * square[1], 3 * square[1] + 3):
-                if board[i][j] == num:
-                    return True
-
-        return False
-
     def is_in_row(self, board: Board, num: int, row: int) -> bool:
-        
         return num in board[row]
 
     def is_in_column(self, board: Board, num: int, column: int) -> bool:
-
         for row in board:
-
             if num == row[column]:
                 return True
 
         return False
-
 
     def draw_board(self) -> None:
 
@@ -173,11 +105,7 @@ class Sudoku:
 
             for j in range(9):
 
-                if j % 3 == 2:
-                    sep = "│"
-                else:
-                    sep = " "
-
+                sep = "│" if j % 3 == 2 else " "
                 print(f" {self._draw_value(self.board[i][j])} {sep}", end="")
 
             print()
@@ -212,30 +140,22 @@ class Sudoku:
         print(last)
 
     def _draw_value(self, val: int) -> str:
-
-        if val == 0:
-            return " "
-
-        return str(val)
-
-
-
-chars = ["┌", "┐", "┘", "└", "│", "┤", "├", "┬", "┴", "┼", "─"]
+        return str(val) if val != 0 else " "
 
 
 test_board_2 = [
 
             [1, 0, 0,    0, 0, 0,    0, 0, 0],
-            [0, 0, 0,    0, 0, 0,    0, 0, 0],
-            [0, 0, 0,    0, 0, 0,    0, 0, 0],
+            [0, 0, 0,    1, 0, 0,    0, 0, 0],
+            [0, 0, 0,    0, 0, 0,    1, 0, 0],
 
-            [0, 0, 0,    0, 0, 0,    0, 0, 0],
+            [0, 1, 0,    0, 0, 0,    0, 0, 0],
             [0, 0, 0,    0, 1, 0,    0, 0, 0],
-            [0, 0, 0,    0, 0, 0,    0, 0, 0],
+            [0, 0, 0,    0, 0, 0,    0, 1, 0],
 
-            [0, 0, 0,    0, 0, 0,    0, 0, 0],
-            [0, 0, 0,    0, 0, 0,    0, 0, 0],
-            [0, 0, 0,    0, 0, 0,    0, 0, 0]
+            [0, 0, 1,    0, 0, 0,    0, 0, 0],
+            [0, 0, 0,    0, 0, 1,    0, 0, 0],
+            [0, 0, 0,    0, 0, 0,    0, 0, 1]
 
             ]
 
@@ -257,5 +177,5 @@ test_board = [
 
 
 sudoku = Sudoku(test_board)
-sudoku.fill_board()
+sudoku.solve()
 sudoku.draw_board()
